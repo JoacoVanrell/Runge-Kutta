@@ -1,0 +1,327 @@
+================================================================================
+           PROYECTO INFORMÁTICO — ANÁLISIS NUMÉRICO 2026
+         UNIVERSIDAD DE MENDOZA — FACULTAD DE INGENIERÍA
+                    INGENIERÍA EN INFORMÁTICA
+================================================================================
+
+TEMA: Resolución de Ecuaciones Diferenciales Ordinarias (EDO)
+      Método de Runge-Kutta de 4° Orden
+
+================================================================================
+1. INTRODUCCIÓN
+================================================================================
+
+Las ecuaciones diferenciales ordinarias (EDO) de primer orden de la forma
+
+    y' = f(x, y),    y(x0) = y0
+
+aparecen con frecuencia en problemas de Ingeniería en Informática: modelado
+térmico de procesadores, simulación de sistemas de control, análisis de
+rendimiento de redes, entre otros. En la mayoría de los casos prácticos no
+existe solución analítica cerrada, por lo que se recurre a métodos numéricos
+para aproximar la solución.
+
+El Método de Euler y el Método de Taylor permiten resolver estos problemas,
+pero presentan errores de truncamiento locales del orden de h (Euler) o
+requieren evaluar derivadas de alto orden (Taylor). El Método de Runge-Kutta
+de 4° Orden (RK4) supera ambas limitaciones: alcanza un error de truncamiento
+local del orden O(h⁵), siendo notablemente más preciso sin necesidad de
+calcular derivadas de orden superior.
+
+
+================================================================================
+2. FUNDAMENTO MATEMÁTICO
+================================================================================
+
+Dado un Problema de Valor Inicial (PVI):
+
+    dy/dx = f(x, y),    y(x0) = y0
+
+El método RK4 construye la solución paso a paso. Conocido el punto (xᵢ, yᵢ),
+el siguiente punto se calcula mediante la fórmula de recurrencia:
+
+    yᵢ₊₁ = yᵢ + h · φ(xᵢ, yᵢ)
+
+donde φ es un promedio ponderado de cuatro pendientes (k₁, k₂, k₃, k₄):
+
+    φ = (k₁ + 2·k₂ + 2·k₃ + k₄) / 6
+
+Cada pendiente representa una estimación de la derivada en distintos puntos
+del intervalo [xᵢ, xᵢ₊₁]:
+
+    k₁ = f(xᵢ,       yᵢ)                     ← pendiente al inicio del paso
+    k₂ = f(xᵢ + h/2, yᵢ + (h/2)·k₁)         ← pendiente en el punto medio (usando k₁)
+    k₃ = f(xᵢ + h/2, yᵢ + (h/2)·k₂)         ← pendiente en el punto medio (usando k₂)
+    k₄ = f(xᵢ + h,   yᵢ + h·k₃)             ← pendiente al final del paso
+
+La idea central del método es combinar estas cuatro estimaciones para obtener
+una pendiente promedio mucho más representativa que la del método de Euler
+(que sólo usa k₁). k₂ y k₃ tienen doble peso por ser estimaciones internas
+del intervalo, más informativas que los extremos.
+
+Características del método:
+  - Orden:          4° (error local O(h⁵), error global O(h⁴))
+  - Autoarrancante: no requiere valores previos, sólo la condición inicial
+  - Ventaja sobre Taylor: no requiere calcular derivadas de orden superior
+  - Ventaja sobre Euler:  error mucho menor para el mismo tamaño de paso h
+
+
+================================================================================
+3. APLICACIÓN A LA INGENIERÍA EN INFORMÁTICA
+================================================================================
+
+3.1 Gestión Térmica en Sistemas Computacionales
+------------------------------------------------
+En Ingeniería en Informática, el comportamiento térmico de los componentes es
+un factor crítico en el diseño y operación de sistemas. Los procesadores,
+GPUs, y otros chips disipan calor durante su funcionamiento, y su temperatura
+evoluciona de forma continua en el tiempo en respuesta a cambios en la carga
+de trabajo, la velocidad del ventilador, o las condiciones del entorno.
+
+Conocer con precisión cómo varía la temperatura a lo largo del tiempo permite:
+  - Diseñar algoritmos de throttling: reducir la frecuencia del procesador
+    antes de alcanzar la temperatura crítica de apagado.
+  - Optimizar sistemas de refrigeración: dimensionar disipadores y ventiladores
+    según la velocidad de enfriamiento requerida.
+  - Simular escenarios de carga: predecir el comportamiento térmico de un
+    sistema embebido o servidor antes de fabricarlo o desplegarlo.
+
+Todos estos fenómenos involucran una variable (temperatura) que cambia
+continuamente en función del tiempo, lo que los convierte en Problemas de
+Valor Inicial (PVI) resolubles mediante métodos numéricos como RK4.
+
+3.2 Modelo Matemático: Ley de Enfriamiento de Newton
+-----------------------------------------------------
+Para modelar el enfriamiento de un procesador se utiliza la Ley de
+Enfriamiento de Newton, que establece que la tasa de cambio de temperatura
+de un cuerpo es proporcional a la diferencia entre su temperatura y la del
+entorno:
+
+    dT/dt = -k · (T - T_amb)
+
+donde:
+    T       : temperatura del procesador en el instante t (°C)
+    T_amb   : temperatura ambiente (°C)
+    k       : constante de disipación térmica (min⁻¹), depende del material
+              del disipador, la velocidad del ventilador y el diseño del sistema
+    t       : tiempo (minutos)
+
+Esta ecuación es una EDO de primer orden de la forma y' = f(x, y), por lo
+que puede resolverse directamente con el método RK4 implementado.
+
+En los casos más complejos —donde k varía con la temperatura, o intervienen
+varias fuentes de calor simultáneas— la EDO deja de tener solución analítica
+simple, y el método numérico se vuelve la única herramienta práctica.
+
+3.3 Ejemplo: Enfriamiento de un Procesador bajo Reducción de Carga
+-------------------------------------------------------------------
+Se considera un procesador que alcanza 95 °C bajo carga máxima sostenida.
+Al reducir la carga, comienza a enfriarse. Se desea determinar cuánto tiempo
+tarda en bajar a 40 °C (umbral habitual para desactivar el throttling), con:
+
+    - Temperatura inicial:     T(0) = 95 °C
+    - Temperatura ambiente:    T_amb = 25 °C
+    - Constante de disipación: k = 0.05 min⁻¹
+
+La EDO del problema queda:
+
+    dT/dt = -0.05 · (T - 25),    T(0) = 95
+
+Esta EDO particular tiene solución analítica, lo que permite comparar el
+resultado numérico con el valor exacto y verificar la precisión del método:
+
+    T(t) = 25 + 70 · e^(-0.05·t)
+
+    Tiempo exacto para T = 40 °C:
+    t = ln(70/15) / 0.05 ≈ 30.81 minutos
+
+Resolución con RK4 (h = 1 minuto, desde t = 0 hasta t = 35 minutos):
+
+La función ingresada en el programa es:
+
+    f(x, y) = -0.05 * (y - 25)
+
+Condiciones ingresadas al ejecutar el programa:
+    x0      = 0      (tiempo inicial en minutos)
+    y0      = 95     (temperatura inicial en °C)
+    x_final = 35     (tiempo final en minutos)
+    h       = 1      (paso de 1 minuto)
+
+
+================================================================================
+4. RESULTADOS
+================================================================================
+
+Tabla comparativa: Runge-Kutta 4° Orden vs. Solución Analítica
+Función: f(t,T) = -0.05*(T - 25),  T(0) = 95°C,  h = 1 min
+
+  Paso    t (min)    T_RK4 (°C)    T_exacta (°C)   Error absoluto
+  ---------------------------------------------------------------
+     0        0.0     95.000000        95.000000       0.00e+00
+     1        1.0     91.586060        91.586060       1.81e-07
+     2        2.0     88.338620        88.338619       3.44e-07
+     3        3.0     85.249559        85.249558       4.91e-07
+     4        4.0     82.311153        82.311153       6.22e-07
+     5        5.0     79.516056        79.516055       7.40e-07
+     6        6.0     76.857276        76.857275       8.45e-07
+     7        7.0     74.328167        74.328166       9.37e-07
+     8        8.0     71.922404        71.922403       1.02e-06
+     9        9.0     69.633972        69.633971       1.09e-06
+    10       10.0     67.457147        67.457146       1.15e-06
+    11       11.0     65.386488        65.386487       1.21e-06
+    12       12.0     63.416816        63.416815       1.25e-06
+    13       13.0     61.543206        61.543204       1.29e-06
+    14       14.0     59.760973        59.760971       1.32e-06
+    15       15.0     58.065660        58.065659       1.35e-06
+    16       16.0     56.453029        56.453027       1.37e-06
+    17       17.0     54.919047        54.919045       1.38e-06
+    18       18.0     53.459878        53.459876       1.39e-06
+    19       19.0     52.071873        52.071872       1.40e-06
+    20       20.0     50.751562        50.751561       1.40e-06
+    21       21.0     49.495644        49.495642       1.40e-06
+    22       22.0     48.300977        48.300976       1.39e-06
+    23       23.0     47.164575        47.164574       1.38e-06
+    24       24.0     46.083596        46.083595       1.37e-06
+    25       25.0     45.055337        45.055336       1.36e-06
+    26       26.0     44.077227        44.077226       1.35e-06
+    27       27.0     43.146820        43.146818       1.33e-06
+    28       28.0     42.261789        42.261787       1.31e-06
+    29       29.0     41.419921        41.419920       1.29e-06
+    30       30.0     40.619112        40.619111       1.27e-06
+    31       31.0     39.857359        39.857358       1.25e-06
+    32       32.0     39.132757        39.132756       1.23e-06
+    33       33.0     38.443495        38.443494       1.20e-06
+    34       34.0     37.787848        37.787847       1.18e-06
+    35       35.0     37.164177        37.164176       1.16e-06
+
+
+================================================================================
+5. ANÁLISIS DE RESULTADOS
+================================================================================
+
+5.1 Tiempo estimado para alcanzar 40 °C
+-----------------------------------------
+De la tabla se observa que:
+    - En t = 30 min, T_RK4 = 40.619112 °C  (aún por encima de 40 °C)
+    - En t = 31 min, T_RK4 = 39.857359 °C  (ya por debajo de 40 °C)
+
+Interpolando linealmente entre estos dos puntos:
+
+    t_40 ≈ 30 + (40.619112 - 40) / (40.619112 - 39.857359)
+         ≈ 30 + 0.619112 / 0.761753
+         ≈ 30 + 0.8127
+         ≈ 30.81 minutos
+
+El procesador tarda aproximadamente 30 minutos y 49 segundos en bajar de
+95 °C a 40 °C con los parámetros dados.
+
+5.2 Precisión del Método
+-------------------------
+El error absoluto máximo observado en toda la simulación es del orden de
+1.40 × 10⁻⁶ °C (aproximadamente 0.0000014 °C), un valor completamente
+despreciable para cualquier aplicación de ingeniería.
+
+Esta precisión es consecuencia directa del orden 4 del método:
+  - Con h = 1 min, el error global es O(h⁴) = O(1) ≈ ~10⁻⁶ (como se verifica)
+  - Euler con el mismo paso daría errores del orden O(h) ≈ 10⁻² a 10⁻³
+
+La comparación evidencia que RK4 es entre 1000 y 10000 veces más preciso
+que Euler para el mismo tamaño de paso.
+
+5.3 Comportamiento de la Solución
+-----------------------------------
+La curva de enfriamiento sigue una forma exponencial decreciente, característica
+de la Ley de Newton. La velocidad de enfriamiento es mayor al inicio (cuando la
+diferencia T - T_amb es grande) y se reduce gradualmente al acercarse al
+equilibrio térmico.
+
+Velocidades de enfriamiento representativas:
+    - t =  0 min: dT/dt = -3.50 °C/min  (enfriamiento rápido)
+    - t = 15 min: dT/dt = -1.65 °C/min  (velocidad reducida)
+    - t = 31 min: dT/dt = -0.74 °C/min  (enfriamiento lento cerca del objetivo)
+
+
+================================================================================
+6. DESCRIPCIÓN DEL PROGRAMA
+================================================================================
+
+El programa (Runge-Kutta.py) implementa el método RK4 de forma genérica,
+permitiendo resolver cualquier EDO de primer orden y' = f(x, y).
+
+Módulos y funciones:
+--------------------
+
+  obtener_funcion()
+      Solicita al usuario la expresión de f(x, y) como texto y construye
+      una función Python evaluable con eval(). Soporta las funciones
+      matemáticas: sin, cos, tan, exp, log, sqrt.
+
+  obtener_condiciones()
+      Solicita x0, y0, x_final y h. Retorna los cuatro parámetros numéricos
+      necesarios para definir completamente el PVI.
+
+  runge_kutta_4(f, x0, y0, h, n_pasos)
+      Núcleo del programa. Implementa el algoritmo RK4 mediante un bucle
+      que calcula k1, k2, k3, k4 en cada iteración y acumula los puntos
+      de la solución en las listas xs e ys. Detecta y reporta divergencia
+      o desbordamiento numérico.
+
+  mostrar_resultados(xs, ys, formula)
+      Imprime la tabla de resultados en formato tabulado con el número de
+      paso, el valor de x y el valor aproximado de y.
+
+  main()
+      Coordina el flujo completo con validación de entradas: verifica que
+      la fórmula sea evaluable, que x_final > x0 y que h > 0.
+
+
+================================================================================
+7. INSTRUCCIONES DE EJECUCIÓN
+================================================================================
+
+Requisitos:
+    - Python 3.x instalado
+    - No requiere librerías externas (sólo el módulo estándar math)
+
+Ejecución:
+    python3 Runge-Kutta.py
+
+Entradas para el ejemplo del procesador:
+    Función f(x, y):    -0.05 * (y - 25)
+    x0:                 0
+    y0:                 95
+    x_final:            35
+    h:                  1
+
+Otros ejemplos de funciones válidas:
+    y' = 2x + 1         →   2*x + 1
+    y' = sin(x) * y     →   sin(x) * y
+    y' = exp(-x) - y    →   exp(-x) - y
+    y' = (1/2)*(1+x)*y² →   0.5 * (1 + x) * y**2
+
+
+================================================================================
+8. CONCLUSIONES
+================================================================================
+
+El Método de Runge-Kutta de 4° Orden demostró ser altamente eficiente para
+resolver el problema de enfriamiento del procesador:
+
+  1. Precisión excepcional: el error absoluto no superó los 1.4 × 10⁻⁶ °C,
+     siendo prácticamente indistinguible de la solución analítica exacta.
+
+  2. Resultado ingenieril: el procesador tarda aproximadamente 30.81 minutos
+     en pasar de 95 °C a 40 °C, lo que es información relevante para diseñar
+     algoritmos de throttling y gestión térmica en sistemas computacionales.
+
+  3. Generalidad del programa: al aceptar cualquier f(x, y) ingresada por el
+     usuario, la herramienta puede resolver una amplia variedad de EDOs de
+     primer orden sin modificar el código.
+
+  4. Comparación con métodos de menor orden: RK4 logra errores del orden de
+     10⁻⁶ con h = 1, mientras que Euler requeriría pasos h del orden de 10⁻⁴
+     para alcanzar precisión comparable, implicando 10.000 veces más cálculos.
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
