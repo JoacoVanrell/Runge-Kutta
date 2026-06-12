@@ -196,53 +196,7 @@ Función: f(t,T) = -0.05*(T - 25),  T(0) = 95°C,  h = 1 min
 
 
 ================================================================================
-5. ANÁLISIS DE RESULTADOS
-================================================================================
-
-5.1 Tiempo estimado para alcanzar 40 °C
------------------------------------------
-De la tabla se observa que:
-    - En t = 30 min, T_RK4 = 40.619112 °C  (aún por encima de 40 °C)
-    - En t = 31 min, T_RK4 = 39.857359 °C  (ya por debajo de 40 °C)
-
-Interpolando linealmente entre estos dos puntos:
-
-    t_40 ≈ 30 + (40.619112 - 40) / (40.619112 - 39.857359)
-         ≈ 30 + 0.619112 / 0.761753
-         ≈ 30 + 0.8127
-         ≈ 30.81 minutos
-
-El procesador tarda aproximadamente 30 minutos y 49 segundos en bajar de
-95 °C a 40 °C con los parámetros dados.
-
-5.2 Precisión del Método
--------------------------
-El error absoluto máximo observado en toda la simulación es del orden de
-1.40 × 10⁻⁶ °C (aproximadamente 0.0000014 °C), un valor completamente
-despreciable para cualquier aplicación de ingeniería.
-
-Esta precisión es consecuencia directa del orden 4 del método:
-  - Con h = 1 min, el error global es O(h⁴) = O(1) ≈ ~10⁻⁶ (como se verifica)
-  - Euler con el mismo paso daría errores del orden O(h) ≈ 10⁻² a 10⁻³
-
-La comparación evidencia que RK4 es entre 1000 y 10000 veces más preciso
-que Euler para el mismo tamaño de paso.
-
-5.3 Comportamiento de la Solución
------------------------------------
-La curva de enfriamiento sigue una forma exponencial decreciente, característica
-de la Ley de Newton. La velocidad de enfriamiento es mayor al inicio (cuando la
-diferencia T - T_amb es grande) y se reduce gradualmente al acercarse al
-equilibrio térmico.
-
-Velocidades de enfriamiento representativas:
-    - t =  0 min: dT/dt = -3.50 °C/min  (enfriamiento rápido)
-    - t = 15 min: dT/dt = -1.65 °C/min  (velocidad reducida)
-    - t = 31 min: dT/dt = -0.74 °C/min  (enfriamiento lento cerca del objetivo)
-
-
-================================================================================
-6. DESCRIPCIÓN DEL PROGRAMA
+5. DESCRIPCIÓN DEL PROGRAMA
 ================================================================================
 
 El programa (Runge-Kutta.py) implementa el método RK4 de forma genérica,
@@ -276,15 +230,19 @@ Módulos y funciones:
 
 
 ================================================================================
-7. INSTRUCCIONES DE EJECUCIÓN
+6. INSTRUCCIONES DE EJECUCIÓN
 ================================================================================
 
 Requisitos:
     - Python 3.x instalado
     - No requiere librerías externas (sólo el módulo estándar math)
 
-Ejecución:
+Ejecución en Linux / macOS:
     python3 Runge-Kutta.py
+
+Ejecución en Windows:
+    python Runge-Kutta.py
+    (o bien: py Runge-Kutta.py)
 
 Entradas para el ejemplo del procesador:
     Función f(x, y):    -0.05 * (y - 25)
@@ -298,29 +256,6 @@ Otros ejemplos de funciones válidas:
     y' = sin(x) * y     →   sin(x) * y
     y' = exp(-x) - y    →   exp(-x) - y
     y' = (1/2)*(1+x)*y² →   0.5 * (1 + x) * y**2
-
-
-================================================================================
-8. CONCLUSIONES
-================================================================================
-
-El Método de Runge-Kutta de 4° Orden demostró ser altamente eficiente para
-resolver el problema de enfriamiento del procesador:
-
-  1. Precisión excepcional: el error absoluto no superó los 1.4 × 10⁻⁶ °C,
-     siendo prácticamente indistinguible de la solución analítica exacta.
-
-  2. Resultado ingenieril: el procesador tarda aproximadamente 30.81 minutos
-     en pasar de 95 °C a 40 °C, lo que es información relevante para diseñar
-     algoritmos de throttling y gestión térmica en sistemas computacionales.
-
-  3. Generalidad del programa: al aceptar cualquier f(x, y) ingresada por el
-     usuario, la herramienta puede resolver una amplia variedad de EDOs de
-     primer orden sin modificar el código.
-
-  4. Comparación con métodos de menor orden: RK4 logra errores del orden de
-     10⁻⁶ con h = 1, mientras que Euler requeriría pasos h del orden de 10⁻⁴
-     para alcanzar precisión comparable, implicando 10.000 veces más cálculos.
 
 ================================================================================
 FIN DEL DOCUMENTO
