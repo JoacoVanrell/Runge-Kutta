@@ -113,29 +113,27 @@ En los casos más complejos —donde k varía con la temperatura, o intervienen
 varias fuentes de calor simultáneas— la EDO deja de tener solución analítica
 simple, y el método numérico se vuelve la única herramienta práctica.
 
-3.3 Ejemplo: Enfriamiento de un Procesador bajo Reducción de Carga
--------------------------------------------------------------------
+3.3 Ejemplo 1: Enfriamiento de un Procesador bajo Reducción de Carga
+---------------------------------------------------------------------
 Se considera un procesador que alcanza 95 °C bajo carga máxima sostenida.
 Al reducir la carga, comienza a enfriarse. Se desea determinar cuánto tiempo
 tarda en bajar a 40 °C (umbral habitual para desactivar el throttling), con:
 
     - Temperatura inicial:     T(0) = 95 °C
     - Temperatura ambiente:    T_amb = 25 °C
-    - Constante de disipación: k = 0.05 min⁻¹
+    - Constante de disipación: k = 0.05 min^-1
 
 La EDO del problema queda:
 
-    dT/dt = -0.05 · (T - 25),    T(0) = 95
+    dT/dt = -0.05 * (T - 25),    T(0) = 95
 
-Esta EDO particular tiene solución analítica, lo que permite comparar el
-resultado numérico con el valor exacto y verificar la precisión del método:
+Esta EDO tiene solución analítica, lo que permite comparar el resultado numérico
+con el valor exacto y verificar la precisión del método:
 
-    T(t) = 25 + 70 · e^(-0.05·t)
+    T(t) = 25 + 70 * e^(-0.05*t)
 
     Tiempo exacto para T = 40 °C:
     t = ln(70/15) / 0.05 ≈ 30.81 minutos
-
-Resolución con RK4 (h = 1 minuto, desde t = 0 hasta t = 35 minutos):
 
 La función ingresada en el programa es:
 
@@ -147,14 +145,8 @@ Condiciones ingresadas al ejecutar el programa:
     x_final = 35     (tiempo final en minutos)
     h       = 1      (paso de 1 minuto)
 
-
-================================================================================
-4. RESULTADOS
-================================================================================
-
-Tabla comparativa: Runge-Kutta 4° Orden vs. Solución Analítica
-Función: f(t,T) = -0.05*(T - 25),  T(0) = 95°C,  h = 1 min
-
+Resultados — Tabla comparativa: RK4 vs. Solución Analítica
+-----------------------------------------------------------
   Paso    t (min)    T_RK4 (°C)    T_exacta (°C)   Error absoluto
   ---------------------------------------------------------------
      0        0.0     95.000000        95.000000       0.00e+00
@@ -194,9 +186,115 @@ Función: f(t,T) = -0.05*(T - 25),  T(0) = 95°C,  h = 1 min
     34       34.0     37.787848        37.787847       1.18e-06
     35       35.0     37.164177        37.164176       1.16e-06
 
+Entre t=30 min (40.62 °C) y t=31 min (39.86 °C) se cruza el umbral de 40 °C.
+Interpolando linealmente: t ≈ 30.81 minutos. Error absoluto máximo: 1.40e-06 °C.
+
+Gráfico — Temperatura del procesador vs Tiempo
+-----------------------------------------------
+    Temperatura del procesador vs Tiempo
+    95.0 |*
+    90.6 |  **
+    86.1 |     *
+    81.7 |       **
+    77.2 |          *
+    72.8 |           * *
+    68.3 |               **
+    63.9 |                  * *
+    59.4 |                     * **
+    55.0 |                          * **
+    50.5 |                               * ** *
+    46.1 |                                     * * **
+    41.6 |                                            * ** **
+    37.2 |                                                    * ** *
+         +----------------------------------------------------------
+         0                           18                          35
+                                Tiempo (min)
+    (* = valor RK4)
+
+
+3.4 Ejemplo 2: Fragmentación de Memoria en un Sistema Operativo (sin solución analítica)
+-----------------------------------------------------------------------------------------
+En un sistema operativo, los procesos solicitan y liberan memoria constantemente.
+Con el tiempo aparece la fragmentación: hay memoria libre pero dispersa en bloques
+pequeños que no pueden usarse. Este ejemplo modela cómo evoluciona la memoria libre
+disponible (M) considerando que los procesos la consumen a una tasa que varía
+periódicamente con el tiempo y que el sistema operativo la recupera de forma progresiva.
+
+La EDO que modela este fenómeno es:
+
+    dM/dt = -alpha * M * sin(t) + beta * (M_total - M)
+
+donde:
+    M       : memoria libre disponible en el instante t (MB)
+    alpha   : tasa de consumo variable (depende de la carga del sistema)
+    beta    : tasa de recuperación del SO (compactación, liberación de procesos)
+    M_total : memoria RAM total del sistema (MB)
+
+El término -alpha * M * sin(t) hace que la EDO sea no autónoma y no lineal, lo
+que impide resolverla analíticamente de forma cerrada. El método RK4 es la
+herramienta necesaria para aproximar su solución.
+
+La función ingresada en el programa es:
+
+    f(x, y) = -0.05 * y * sin(x) + 0.02 * (8192 - y)
+
+Condiciones ingresadas al ejecutar el programa:
+    x0      = 0       (tiempo inicial en segundos)
+    y0      = 7000    (memoria libre inicial en MB)
+    x_final = 60      (tiempo final en segundos)
+    h       = 0.5     (paso de 0.5 segundos)
+
+Parámetros del modelo:
+    alpha   = 0.05    M_total = 8192 MB    beta = 0.02
+
+Resultados — Tabla RK4 (muestra cada 10 pasos = cada 5 segundos)
+-----------------------------------------------------------------
+  Paso    t (s)    M libre (MB)
+  ------------------------------
+     0      0.0    7000.0000
+    10      5.0    6910.2535
+    20     10.0    6657.0238
+    30     15.0    6789.3641
+    40     20.0    7305.9816
+    50     25.0    7634.0946
+    60     30.0    7417.8885
+    70     35.0    7108.3218
+    80     40.0    7253.8612
+    90     45.0    7765.9831
+   100     50.0    8010.4708
+   110     55.0    7701.7342
+   120     60.0    7376.6610
+
+La memoria libre oscila con el tiempo debido al término sin(t): cae inicialmente
+cuando los procesos consumen más de lo que el SO recupera, luego sube al invertirse
+el signo del seno, y así sucesivamente. Al no existir solución analítica cerrada,
+RK4 es el único método práctico para obtener estos valores.
+
+Gráfico — Memoria libre del SO vs Tiempo
+-----------------------------------------
+    Memoria libre del SO vs Tiempo
+  8094.7 |                                                     **
+  7966.0 |                                          *    **      *
+  7837.3 |                                    *    **          *
+  7708.6 |                             **    * *   * *   * *  *  *
+  7579.9 |                       **    * *   * *  *  *  *  *      *
+  7451.2 |                  **   * *  *  *  *   * *   *     * *   *
+  7322.5 |           **    * *     *                  ***   **     *
+  7193.7 |      *    * *   * *  *   * *   * *   **     *
+  7065.0 |     * *     *  *     *   * *   **
+  6936.3 |*    * *  *   *     **     *
+  6807.6 | *      * *   ***    *
+  6678.9 | *  *   * *    *
+  6550.2 |  * *    *
+  6421.5 |  **
+         +----------------------------------------------------------
+         0                           30                          60
+                                 Tiempo (s)
+    (* = valor RK4)
+
 
 ================================================================================
-5. DESCRIPCIÓN DEL PROGRAMA
+4. DESCRIPCIÓN DEL PROGRAMA
 ================================================================================
 
 El programa (Runge-Kutta.py) implementa el método RK4 de forma genérica,
@@ -230,12 +328,12 @@ Módulos y funciones:
 
 
 ================================================================================
-6. INSTRUCCIONES DE EJECUCIÓN
+5. INSTRUCCIONES DE EJECUCIÓN
 ================================================================================
 
 Requisitos:
     - Python 3.x instalado
-    - No requiere librerías externas (sólo el módulo estándar math)
+    - No requiere librerías externas (solo el módulo estándar math)
 
 Ejecución en Linux / macOS:
     python3 Runge-Kutta.py
@@ -244,18 +342,11 @@ Ejecución en Windows:
     python Runge-Kutta.py
     (o bien: py Runge-Kutta.py)
 
-Entradas para el ejemplo del procesador:
-    Función f(x, y):    -0.05 * (y - 25)
-    x0:                 0
-    y0:                 95
-    x_final:            35
-    h:                  1
-
 Otros ejemplos de funciones válidas:
-    y' = 2x + 1         →   2*x + 1
+    y' = 2*x + 1        →   2*x + 1
     y' = sin(x) * y     →   sin(x) * y
     y' = exp(-x) - y    →   exp(-x) - y
-    y' = (1/2)*(1+x)*y² →   0.5 * (1 + x) * y**2
+    y' = 0.5*(1+x)*y^2  →   0.5 * (1 + x) * y**2
 
 ================================================================================
 FIN DEL DOCUMENTO
